@@ -8,7 +8,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name='pingcap-docs-checks',
-    version='0.0.2',
+    version='0.0.3',
     author='yikeke',
     author_email='yikeke@pingcap.com',
     url='https://github.com/yikeke/pingcap-docs-checks',
@@ -21,9 +21,7 @@ setuptools.setup(
     # folder/file names can not contain "-"
     entry_points={
         'console_scripts': [
-            'tag=cochecks:tag',
-            'file=cochecks:filename',
-            'image=cochecks:imagename'
+            'cocheck=cochecks:exe_main'
         ],
     }
 )
