@@ -106,6 +106,7 @@ def filter_backticks(content, filename):
     return content
 
 def check_tags(filename):
+    # print("checking: ", filename)
     status_code = 0
 
     # print(sys.argv[1:])
@@ -151,6 +152,8 @@ def check_tags(filename):
     if status_code:
         # print("HINT: Unclosed tags will cause website build failure. Please fix the reported unclosed tags. You can use backticks `` to wrap them or close them. Thanks.")
         exit(1)
+    # else:
+    #     print("Your file has no open tags!")
 
 def process(opt):
     path, file = opt.path, opt.file
