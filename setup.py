@@ -21,9 +21,9 @@ setuptools.setup(
     # folder/file names can not contain "-"
     entry_points={
         'console_scripts': [
-            'tag=cochecks.check_tags:tag',
-            'file=cochecks.check_tags:filename',
-            'image=cochecks.check_tags:imagename'
+            'tag=cochecks:tag',
+            'file=cochecks:filename',
+            'image=cochecks:imagename'
         ],
     }
 )
