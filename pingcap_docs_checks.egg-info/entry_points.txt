@@ -1,0 +1,5 @@
+[console_scripts]
+file = cochecks:filename
+image = cochecks:imagename
+tag = cochecks:tag
+
