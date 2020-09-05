@@ -81,11 +81,12 @@ aliases: ['/docs-cn/tidb-data-migration/dev/command-line-flags/']
 ### `--advertise-addr`
 
 - DM-worker 用于接受客户端请求的外部地址
-- 默认值为 `"{worker-addr}"`
+- 默认值为 <worker-addr>
 - 可选参数，可以为 `"域名:port"` 的形式
 
 ### `--config`
 
+```
 - DM-worker 配置文件路径
 - 默认值为 `""`
 - 可选参数

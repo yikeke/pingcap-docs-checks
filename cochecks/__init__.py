@@ -68,7 +68,10 @@ def tag_is_wrapped(pos, content):
         # print(content_later)
         return False
 
-def filter_frontmatter(content):
+def filter_frontmatter(filename):
+    file = open(filename, "r" )
+    content = file.read()
+    file.close()
     # if there is frontmatter, remove it
     if content.startswith('---'):
         collect = []
@@ -81,7 +84,7 @@ def filter_frontmatter(content):
         content = content[filter_point:]
     return content
 
-def filter_backticks(content, filename):
+def filter_backticks(content):
     # remove content wrapped by backticks
     backticks = []
     content_findall = re.findall(r'```', content)
@@ -96,13 +99,13 @@ def filter_backticks(content, filename):
             print(backticks)
             print(backticks[0][0], backticks[0][1])
             # print(content[backticks[0][0]-10:backticks[0][1]+10])
-            print(filename, ": Your inline code ``` ```  is not closed. Please close it.")
+            print("Some of your code blocks are not closed. Please close them.")
         elif len(backticks) != 0:
             backticks_start = backticks[0][0]
             backticks_end = backticks[1][1]
             # print(backticks_start, backticks_end)
             content = content.replace(content[backticks_start:backticks_end],'')
-            content = filter_backticks(content, filename)
+            content = filter_backticks(content)
     return content
 
 def check_tags(filename):
@@ -112,42 +115,37 @@ def check_tags(filename):
     # print(sys.argv[1:])
     # for filename in sys.argv[1:]:
         # print("Checking " + filename + "......\n")
-    if os.path.isfile(filename):
-        file = open(filename, "r" )
-        content = file.read()
-        file.close()
+    content = filter_frontmatter(filename)
+    content = filter_backticks(content)
+    # print(content)
+    result_findall = re.findall(r'<([^\n`>]*)>', content)
+    if len(result_findall) != 0:
+        result_finditer = re.finditer(r'<([^\n`>]*)>', content)
+        stack = []
+        for i in result_finditer:
+            # print(i.group(), i.span())
+            tag = i.group()
+            pos = i.span()
 
-        content = filter_frontmatter(content)
-        content = filter_backticks(content, filename)
-        # print(content)
-        result_findall = re.findall(r'<([^\n`>]*)>', content)
-        if len(result_findall) != 0:
-            result_finditer = re.finditer(r'<([^\n`>]*)>', content)
-            stack = []
-            for i in result_finditer:
-                # print(i.group(), i.span())
-                tag = i.group()
-                pos = i.span()
+            if tag[:4] == '<!--' and tag[-3:] == '-->':
+                continue
+            elif content[pos[0]-2:pos[0]] == '{{' and content[pos[1]:pos[1]+2] == '}}':
+                # print(tag) # filter copyable shortcodes
+                continue
+            elif tag[:5] == '<http': # or tag[:4] == '<ftp'
+                # filter urls
+                continue
+            elif tag_is_wrapped(pos, content):
+                # print(content[int(pos[0])-1:int(pos[1]+1)])
+                # print(tag, 'is wrapped by backticks!')
+                continue
 
-                if tag[:4] == '<!--' and tag[-3:] == '-->':
-                    continue
-                elif content[pos[0]-2:pos[0]] == '{{' and content[pos[1]:pos[1]+2] == '}}':
-                    # print(tag) # filter copyable shortcodes
-                    continue
-                elif tag[:5] == '<http': # or tag[:4] == '<ftp'
-                    # filter urls
-                    continue
-                elif tag_is_wrapped(pos, content):
-                    # print(content[int(pos[0])-1:int(pos[1]+1)])
-                    # print(tag, 'is wrapped by backticks!')
-                    continue
+            stack = stack_tag(tag, stack)
 
-                stack = stack_tag(tag, stack)
-
-            if len(stack):
-                stack = ['<' + i + '>' for i in stack]
-                print("ERROR: " + filename + ' has unclosed tags: ' + ', '.join(stack) + '.\n')
-                status_code = 1
+        if len(stack):
+            stack = ['<' + i + '>' for i in stack]
+            print("ERROR: " + filename + ' has unclosed tags: ' + ', '.join(stack) + '.\n')
+            status_code = 1
 
     if status_code:
         # print("HINT: Unclosed tags will cause website build failure. Please fix the reported unclosed tags. You can use backticks `` to wrap them or close them. Thanks.")
@@ -156,22 +154,44 @@ def check_tags(filename):
     #     print("Your file has no open tags!")
 
 def process(opt):
-    path, file = opt.path, opt.file
-    if path:
-        file_with_paths = [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(f)]
-        for old_file_path in file_with_paths:
-            check_tags(old_file_path)
-    elif file:
-        check_tags(file)
+    full, tag, block, snippet = opt.all, opt.tag, opt.block, opt.snippet
+    if tag:
+        path = tag
+        if os.path.isfile(path):
+            check_tags(path)
+        else:
+            file_with_paths = [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(f)]
+            for old_file_path in file_with_paths:
+                check_tags(old_file_path)
+
+    elif block:
+        path = block
+        with open(path, 'r', encoding='utf-8') as f:
+            content = f.read(path)
+        if os.path.isfile(path):
+            filter_backticks(content)
+        else:
+            file_with_paths = [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(f)]
+            for old_file_path in file_with_paths:
+                filter_backticks(content)
+    
+    # elif snippet:
+    #     path = snippet
     else:
         print('I need a parameter!')
         # print(parser.print_help())
 
 def exe_main():
     parser = OptionParser(version="%prog 0.0.3")
-    parser.add_option("-p", "--path", dest="path",
-                      help="parse a directory", metavar="DIR")
-    parser.add_option("-f", "--file", dest="file",
-                      help="parse a file", metavar="FILE")
+    parser.set_defaults(verbose=True)
+    parser.add_option("-a", "--all", dest="all",
+                      help="Checks unclosed tags, code blocks, copyable snippets, etc.", metavar="ALL")
+    parser.add_option("-t", "--tag", dest="tag",
+                      help="Checks unclosed tags", metavar="TAG")
+    parser.add_option("-b", "--block", dest="block",
+                      help="Checks unclosed code blocks", metavar="BLOCK")
+    parser.add_option("-s", "--snippet", dest="snippet",
+                      help="Checks unclosed copyable snippets", metavar="SNIPPET")
+
     options, args = parser.parse_args()
     process(options)
