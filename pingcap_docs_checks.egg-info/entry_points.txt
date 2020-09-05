@@ -1,5 +1,0 @@
-[console_scripts]
-file = cochecks.check_tags:filename
-image = cochecks.check_tags:imagename
-tag = cochecks.check_tags:tag
-
