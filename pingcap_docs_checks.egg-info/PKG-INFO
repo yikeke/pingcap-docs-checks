@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: pingcap-docs-checks
-Version: 0.0.3
+Version: 0.0.4
 Summary: Provides scripts to check markdown files from pingcap docs repositories
 Home-page: https://github.com/yikeke/pingcap-docs-checks
 Author: yikeke
