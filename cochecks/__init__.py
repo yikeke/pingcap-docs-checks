@@ -186,11 +186,11 @@ def exe_main():
     parser.set_defaults(verbose=True)
     parser.add_option("-a", "--all", dest="all",
                       help="Checks unclosed tags, code blocks, copyable snippets, etc.", metavar="ALL")
-    parser.add_option("-t", "--tag", dest="tag",
+    parser.add_option("-t", "--tag", dest="tag", type="string", 
                       help="Checks unclosed tags", metavar="TAG")
-    parser.add_option("-b", "--block", dest="block",
+    parser.add_option("-b", "--block", dest="block", type="string", 
                       help="Checks unclosed code blocks", metavar="BLOCK")
-    parser.add_option("-s", "--snippet", dest="snippet",
+    parser.add_option("-s", "--snippet", dest="snippet", type="string", 
                       help="Checks unclosed copyable snippets", metavar="SNIPPET")
 
     options, args = parser.parse_args()
