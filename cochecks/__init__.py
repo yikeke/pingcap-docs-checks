@@ -68,10 +68,7 @@ def tag_is_wrapped(pos, content):
         # print(content_later)
         return False
 
-def filter_frontmatter(filename):
-    file = open(filename, "r" )
-    content = file.read()
-    file.close()
+def filter_frontmatter(content):
     # if there is frontmatter, remove it
     if content.startswith('---'):
         collect = []
@@ -100,28 +97,29 @@ def check_block(content):
             # print(backticks)
             # print(backticks[0][0], backticks[0][1])
             # print(content[backticks[0][0]-10:backticks[0][1]+10])
-            print("Some of your code blocks are not closed. Please close them.")
-            exit(1)
+            # print("Some of your code blocks are not closed. Please close them.")
+            # exit(1)
+            unclosed_blocks = True
+            return unclosed_blocks
         elif len(backticks) != 0:
+            unclosed_blocks = False
             backticks_start = backticks[0][0]
             backticks_end = backticks[1][1]
             # print(backticks_start, backticks_end)
             content = content.replace(content[backticks_start:backticks_end],'')
             content = check_block(content)
-    return content
+    return unclosed_blocks, content
 
-def check_tags(filename):
+def check_tags(content):
     # print("checking: ", filename)
-    status_code = 0
-
-    content = filter_frontmatter(filename)
+    content = filter_frontmatter(content)
     content = check_block(content)
 
     # print(content)
+    stack = []
     result_findall = re.findall(r'<([^\n`>]*)>', content)
     if len(result_findall) != 0:
         result_finditer = re.finditer(r'<([^\n`>]*)>', content)
-        stack = []
         for i in result_finditer:
             # print(i.group(), i.span())
             tag = i.group()
@@ -142,45 +140,66 @@ def check_tags(filename):
 
             stack = stack_tag(tag, stack)
 
-        if len(stack):
-            stack = ['<' + i + '>' for i in stack]
-            print("ERROR: " + filename + ' has unclosed tags: ' + ', '.join(stack) + '.\n')
-            status_code = 1
-
-    if status_code:
-        # print("HINT: Unclosed tags will cause website build failure. Please fix the reported unclosed tags. You can use backticks `` to wrap them or close them. Thanks.")
-        exit(1)
+    return stack
 
 def process(opt):
     tag, block = opt.tag, opt.block
     if tag:
         path = tag
         if os.path.isfile(path):
-            check_tags(path)
+            with open(path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            stack = check_tags(content)
+            if len(stack):
+                stack = ['<' + i + '>' for i in stack]
+                print("ERROR: " + path + ' has unclosed tags: ' + ', '.join(stack) + '.\n')
+                # print("HINT: Unclosed tags will cause website build failure. Please fix the reported unclosed tags. You can use backticks `` to wrap them or close them. Thanks.")
+                exit(1)
+
         elif os.path.isdir(path):
             file_with_paths = [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(f)]
             for old_file_path in file_with_paths:
-                check_tags(old_file_path)
+                with open(old_file_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                stack = check_tags(content)
+                if len(stack):
+                    stack = ['<' + i + '>' for i in stack]
+                    print("ERROR: " + path + ' has unclosed tags: ' + ', '.join(stack) + '.\n')
+                    status_code = 1
+            if status_code:
+                # print("HINT: Unclosed tags will cause website build failure. Please fix the reported unclosed tags. You can use backticks `` to wrap them or close them. Thanks.")
+                exit(1)
+
         else:
-            print('Please give me a file path or a directory path!')
+            print('Please give me a file path or a directory path.')
 
     elif block:
         path = block
         if os.path.isfile(path):
             with open(path, 'r', encoding='utf-8') as f:
-                content = f.read(path)
-            check_block(content)
+                content = f.read()
+            unclosed_blocks, content = check_block(content)
+            if unclosed_blocks:
+                print("ERROR: " + path + ' has unclosed code blocks. Please close them.')
+                exit(1)
+
         elif os.path.isdir(path):
             file_with_paths = [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(f)]
             for old_file_path in file_with_paths:
-                with open(path, 'r', encoding='utf-8') as f:
-                    content = f.read(path)
-                check_block(content)
+                with open(old_file_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                unclosed_blocks, content = check_block(content)
+                if unclosed_blocks:
+                    print("ERROR: " + path + ' has unclosed code blocks. Please close them.')
+                    status_code = 1
+            if status_code:
+                exit(1)
+
         else:
-            print('Please give me a file path or a directory path!')
+            print('Please specify a file path or a directory path as the argument.')
 
     else:
-        print('I need a parameter!')
+        print('Please specify an option. Execute `cocheck -h` to list all options.')
         # print(parser.print_help())
 
 def exe_main():
@@ -189,9 +208,9 @@ def exe_main():
     # parser.add_option("-a", "--all", dest="all",
     #                   help="Checks unclosed tags, code blocks, copyable snippets, etc.", metavar="ALL")
     parser.add_option("-t", "--tag", dest="tag", type="string", 
-                      help="Checks unclosed tags", metavar="TAG")
+                      help="Checks unclosed HTML tags and code blocks; Accepts a file path or a directory path as the argument.", metavar="TAG")
     parser.add_option("-b", "--block", dest="block", type="string", 
-                      help="Checks unclosed code blocks", metavar="BLOCK")
+                      help="Only checks unclosed code blocks; Accepts a file path or a directory path as the argument.", metavar="BLOCK")
     # parser.add_option("-s", "--snippet", dest="snippet", type="string", 
     #                   help="Checks unclosed copyable snippets", metavar="SNIPPET")
 
