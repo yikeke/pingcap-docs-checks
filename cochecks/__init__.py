@@ -100,20 +100,18 @@ def check_block(content):
             # print("Some of your code blocks are not closed. Please close them.")
             # exit(1)
             unclosed_blocks = True
-            return unclosed_blocks
         elif len(backticks) != 0:
-            unclosed_blocks = False
             backticks_start = backticks[0][0]
             backticks_end = backticks[1][1]
             # print(backticks_start, backticks_end)
             content = content.replace(content[backticks_start:backticks_end],'')
-            content = check_block(content)
+            unclosed_blocks, content = check_block(content)
     return unclosed_blocks, content
 
 def check_tags(content):
     # print("checking: ", filename)
     content = filter_frontmatter(content)
-    content = check_block(content)
+    unclosed_blocks, content = check_block(content)
 
     # print(content)
     stack = []
@@ -203,7 +201,7 @@ def process(opt):
         # print(parser.print_help())
 
 def exe_main():
-    parser = OptionParser(version="%prog 0.0.7")
+    parser = OptionParser(version="%prog 0.0.8")
     parser.set_defaults(verbose=True)
     # parser.add_option("-a", "--all", dest="all",
     #                   help="Checks unclosed tags, code blocks, copyable snippets, etc.", metavar="ALL")
