@@ -1,8 +1,0 @@
-README.md
-setup.py
-cochecks/__init__.py
-pingcap_docs_checks.egg-info/PKG-INFO
-pingcap_docs_checks.egg-info/SOURCES.txt
-pingcap_docs_checks.egg-info/dependency_links.txt
-pingcap_docs_checks.egg-info/entry_points.txt
-pingcap_docs_checks.egg-info/top_level.txt

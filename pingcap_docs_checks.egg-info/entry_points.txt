@@ -1,3 +1,0 @@
-[console_scripts]
-cocheck = cochecks:exe_main
-
