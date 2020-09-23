@@ -8,7 +8,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name='pingcap-docs-checks',
-    version='0.0.5',
+    version='0.0.6',
     author='yikeke',
     author_email='yikeke@pingcap.com',
     url='https://github.com/yikeke/pingcap-docs-checks',

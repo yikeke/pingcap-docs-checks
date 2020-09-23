@@ -203,7 +203,7 @@ def process(opt):
         # print(parser.print_help())
 
 def exe_main():
-    parser = OptionParser(version="%prog 0.0.5")
+    parser = OptionParser(version="%prog 0.0.6")
     parser.set_defaults(verbose=True)
     # parser.add_option("-a", "--all", dest="all",
     #                   help="Checks unclosed tags, code blocks, copyable snippets, etc.", metavar="ALL")
