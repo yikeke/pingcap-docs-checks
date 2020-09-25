@@ -156,7 +156,12 @@ def process(opt):
                 exit(1)
 
         elif os.path.isdir(path):
-            file_with_paths = [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(f)]
+            status_code = 0
+            file_with_paths = []
+            for root, dirs, files in os.walk(path, topdown=True):
+                for name in files:
+                    full_path = os.path.join(root, name)
+                    file_with_paths.append(full_path)
             for old_file_path in file_with_paths:
                 with open(old_file_path, 'r', encoding='utf-8') as f:
                     content = f.read()
@@ -166,7 +171,7 @@ def process(opt):
                     print("ERROR: " + path + ' has unclosed tags: ' + ', '.join(stack) + '.\n')
                     status_code = 1
 
-            if status_code in locals().keys():
+            if status_code:
                 # print("HINT: Unclosed tags will cause website build failure. Please fix the reported unclosed tags. You can use backticks `` to wrap them or close them. Thanks.")
                 exit(1)
 
@@ -184,7 +189,12 @@ def process(opt):
                 exit(1)
 
         elif os.path.isdir(path):
-            file_with_paths = [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(f)]
+            status_code = 0
+            file_with_paths = []
+            for root, dirs, files in os.walk(path, topdown=True):
+                for name in files:
+                    full_path = os.path.join(root, name)
+                    file_with_paths.append(full_path)
             for old_file_path in file_with_paths:
                 with open(old_file_path, 'r', encoding='utf-8') as f:
                     content = f.read()
@@ -193,7 +203,7 @@ def process(opt):
                     print("ERROR: " + path + ' has unclosed code blocks. Please close them.')
                     status_code = 1
 
-            if status_code in locals().keys():
+            if status_code:
                 exit(1)
 
         else:
@@ -204,7 +214,7 @@ def process(opt):
         # print(parser.print_help())
 
 def exe_main():
-    parser = OptionParser(version="%prog 0.0.11")
+    parser = OptionParser(version="%prog 0.0.13")
     parser.set_defaults(verbose=True)
     # parser.add_option("-a", "--all", dest="all",
     #                   help="Checks unclosed tags, code blocks, copyable snippets, etc.", metavar="ALL")
