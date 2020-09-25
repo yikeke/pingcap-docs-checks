@@ -190,7 +190,7 @@ def process(opt):
 
         elif os.path.isdir(block):
             status_code = 0
-            file_with_paths = parse_args_dir(tag)
+            file_with_paths = parse_args_dir(block)
             for old_file_path in file_with_paths:
                 with open(old_file_path, 'r', encoding='utf-8') as f:
                     content = f.read()
@@ -210,7 +210,7 @@ def process(opt):
         # print(parser.print_help())
 
 def exe_main():
-    parser = OptionParser(version="%prog 0.0.15")
+    parser = OptionParser(version="%prog 0.0.16")
     parser.set_defaults(verbose=True)
     # parser.add_option("-a", "--all", dest="all",
     #                   help="Checks unclosed tags, code blocks, copyable snippets, etc.", metavar="ALL")
