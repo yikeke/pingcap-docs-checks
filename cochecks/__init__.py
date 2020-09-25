@@ -8,6 +8,7 @@ from optparse import OptionParser
 
 # reference: https://stackoverflow.com/questions/35761133/python-how-to-check-for-open-and-close-tags
 def stack_tag(tag, stack):
+    # python implementation of data structure "stack"
     t = tag[1:-1]
     first_space = t.find(' ')
     #print(t)
@@ -63,9 +64,6 @@ def tag_is_wrapped(pos, content):
         # print(content_later)
         return True
     else:
-        # print(content_previous.find('`'), content_later.find('`'))
-        # print(content_previous)
-        # print(content_later)
         return False
 
 def filter_frontmatter(content):
@@ -98,19 +96,16 @@ def check_block(content):
             # print(backticks)
             # print(backticks[0][0], backticks[0][1])
             # print(content[backticks[0][0]-10:backticks[0][1]+10])
-            # print("Some of your code blocks are not closed. Please close them.")
             unclosed_blocks = 1
         elif len(backticks) != 0:
             backticks_start = backticks[0][0]
             backticks_end = backticks[1][1]
-            # print(backticks_start, backticks_end)
             content = content.replace(content[backticks_start:backticks_end],'')
             unclosed_blocks, content = check_block(content)
 
     return unclosed_blocks, content
 
 def check_tags(content):
-    # print("checking: ", filename)
     content = filter_frontmatter(content)
     unclosed_blocks, content = check_block(content)
 
@@ -127,7 +122,7 @@ def check_tags(content):
             if tag[:4] == '<!--' and tag[-3:] == '-->':
                 continue
             elif content[pos[0]-2:pos[0]] == '{{' and content[pos[1]:pos[1]+2] == '}}':
-                # print(tag) # filter copyable shortcodes
+                # filter copyable shortcodes
                 continue
             elif tag[:5] == '<http': # or tag[:4] == '<ftp'
                 # filter urls
@@ -141,13 +136,24 @@ def check_tags(content):
 
     return stack
 
+def parse_args_file(path):
+    with open(path, 'r', encoding='utf-8') as f:
+        content = f.read()
+    return content
+
+def parse_args_dir(path):
+    file_with_paths = []
+    for root, dirs, files in os.walk(path, topdown=True):
+        for name in files:
+            full_path = os.path.join(root, name)
+            file_with_paths.append(full_path)
+    return file_with_paths
+
 def process(opt):
     tag, block = opt.tag, opt.block
     if tag:
-        path = tag
-        if os.path.isfile(path):
-            with open(path, 'r', encoding='utf-8') as f:
-                content = f.read()
+        if os.path.isfile(tag):
+            content = parse_args_file(tag)
             stack = check_tags(content)
             if len(stack):
                 stack = ['<' + i + '>' for i in stack]
@@ -155,20 +161,16 @@ def process(opt):
                 # print("HINT: Unclosed tags will cause website build failure. Please fix the reported unclosed tags. You can use backticks `` to wrap them or close them. Thanks.")
                 exit(1)
 
-        elif os.path.isdir(path):
+        elif os.path.isdir(tag):
             status_code = 0
-            file_with_paths = []
-            for root, dirs, files in os.walk(path, topdown=True):
-                for name in files:
-                    full_path = os.path.join(root, name)
-                    file_with_paths.append(full_path)
+            file_with_paths = parse_args_dir(tag)
             for old_file_path in file_with_paths:
                 with open(old_file_path, 'r', encoding='utf-8') as f:
                     content = f.read()
                 stack = check_tags(content)
                 if len(stack):
                     stack = ['<' + i + '>' for i in stack]
-                    print("ERROR: " + path + ' has unclosed tags: ' + ', '.join(stack) + '.\n')
+                    print("ERROR: " + old_file_path + ' has unclosed tags: ' + ', '.join(stack) + '.\n')
                     status_code = 1
 
             if status_code:
@@ -179,28 +181,22 @@ def process(opt):
             print('Please give me a file path or a directory path.')
 
     elif block:
-        path = block
-        if os.path.isfile(path):
-            with open(path, 'r', encoding='utf-8') as f:
-                content = f.read()
+        if os.path.isfile(block):
+            content = parse_args_file(block)
             unclosed_blocks, content = check_block(content)
             if unclosed_blocks:
                 print("ERROR: " + path + ' has unclosed code blocks. Please close them.')
                 exit(1)
 
-        elif os.path.isdir(path):
+        elif os.path.isdir(block):
             status_code = 0
-            file_with_paths = []
-            for root, dirs, files in os.walk(path, topdown=True):
-                for name in files:
-                    full_path = os.path.join(root, name)
-                    file_with_paths.append(full_path)
+            file_with_paths = parse_args_dir(tag)
             for old_file_path in file_with_paths:
                 with open(old_file_path, 'r', encoding='utf-8') as f:
                     content = f.read()
                 unclosed_blocks, content = check_block(content)
                 if unclosed_blocks:
-                    print("ERROR: " + path + ' has unclosed code blocks. Please close them.')
+                    print("ERROR: " + old_file_path + ' has unclosed code blocks. Please close them.')
                     status_code = 1
 
             if status_code:
@@ -214,7 +210,7 @@ def process(opt):
         # print(parser.print_help())
 
 def exe_main():
-    parser = OptionParser(version="%prog 0.0.13")
+    parser = OptionParser(version="%prog 0.0.14")
     parser.set_defaults(verbose=True)
     # parser.add_option("-a", "--all", dest="all",
     #                   help="Checks unclosed tags, code blocks, copyable snippets, etc.", metavar="ALL")
