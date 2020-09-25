@@ -185,7 +185,7 @@ def process(opt):
             content = parse_args_file(block)
             unclosed_blocks, content = check_block(content)
             if unclosed_blocks:
-                print("ERROR: " + path + ' has unclosed code blocks. Please close them.')
+                print("ERROR: " + block + ' has unclosed code blocks. Please close them.')
                 exit(1)
 
         elif os.path.isdir(block):
@@ -210,7 +210,7 @@ def process(opt):
         # print(parser.print_help())
 
 def exe_main():
-    parser = OptionParser(version="%prog 0.0.14")
+    parser = OptionParser(version="%prog 0.0.15")
     parser.set_defaults(verbose=True)
     # parser.add_option("-a", "--all", dest="all",
     #                   help="Checks unclosed tags, code blocks, copyable snippets, etc.", metavar="ALL")
