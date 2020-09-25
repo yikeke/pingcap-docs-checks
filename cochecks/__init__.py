@@ -165,7 +165,8 @@ def process(opt):
                     stack = ['<' + i + '>' for i in stack]
                     print("ERROR: " + path + ' has unclosed tags: ' + ', '.join(stack) + '.\n')
                     status_code = 1
-            if status_code:
+
+            if status_code in locals().keys():
                 # print("HINT: Unclosed tags will cause website build failure. Please fix the reported unclosed tags. You can use backticks `` to wrap them or close them. Thanks.")
                 exit(1)
 
@@ -191,7 +192,8 @@ def process(opt):
                 if unclosed_blocks:
                     print("ERROR: " + path + ' has unclosed code blocks. Please close them.')
                     status_code = 1
-            if status_code:
+
+            if status_code in locals().keys():
                 exit(1)
 
         else:
