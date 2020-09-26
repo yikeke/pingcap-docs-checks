@@ -1,5 +1,9 @@
 # TiDB Documentation
 
+```
+ERROR: /Users/coco/Documents/GitHub/pingcap-docs-checks/tests/tag-1.md has unclosed tags: <img>.
+```
+
 Welcome to TiDB documentation!
 
 This repository stores all the source files of [TiDB Docs at the PingCAP website](https://docs.pingcap.com/tidb/v4.0), while the [pingcap/docs-cn](https://github.com/pingcap/docs-cn) repository stores all the source files of [TiDB Documentation in Chinese](https://docs.pingcap.com/zh/tidb/v4.0).

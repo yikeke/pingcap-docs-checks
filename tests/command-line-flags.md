@@ -10,6 +10,8 @@ aliases: ['/docs-cn/tidb-data-migration/dev/command-line-flags/']
 
 ## DM-master
 
+``` ```
+
 ### `--advertise-addr`
 
 - DM-master 用于接收客户端请求的外部地址
@@ -144,5 +146,6 @@ aliases: ['/docs-cn/tidb-data-migration/dev/command-line-flags/']
 ### `--decrypt`
 
 - 将使用 dmctl 加密过的密文解密为明文
-- 默认值为 `""`
+- 默认值为 `""` 
 - 指定该参数时，仅用于解密密文而不会与 DM-master 交互
+```

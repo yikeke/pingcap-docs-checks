@@ -6,9 +6,9 @@ import sys
 import os
 from optparse import OptionParser
 
-# reference: https://stackoverflow.com/questions/35761133/python-how-to-check-for-open-and-close-tags
 def stack_tag(tag, stack):
     # python implementation of data structure "stack"
+    # reference: https://stackoverflow.com/questions/35761133/python-how-to-check-for-open-and-close-tags
     t = tag[1:-1]
     first_space = t.find(' ')
     #print(t)
@@ -46,26 +46,6 @@ def stack_tag(tag, stack):
     #     print("Blocks still open at EOF:", stack)
     return stack
 
-def tag_is_wrapped(pos, content):
-    tag_start = pos[0]
-    tag_end = pos[1]
-    content_previous = content[:tag_start][::-1] # reverse content_previous
-    content_later = content[tag_end:]
-
-    left_wraps_findall = re.findall(r'`', content_previous)
-    left_single_backtick = len(left_wraps_findall) % 2
-    right_wraps_findall = re.findall(r'`', content_later)
-    right_single_backtick = len(right_wraps_findall) % 2
-    # print(left_single_backtick, right_single_backtick)
-
-    if left_single_backtick != 0 and right_single_backtick != 0:
-        # print(content_previous.find('`'), content_later.find('`'))
-        # print(content_previous)
-        # print(content_later)
-        return True
-    else:
-        return False
-
 def filter_frontmatter(content):
     # if there is frontmatter, remove it
     if content.startswith('---'):
@@ -79,61 +59,67 @@ def filter_frontmatter(content):
         content = content[filter_point:]
     return content
 
-def check_block(content):
-    # Check if all code blocks are wrapped with ```
-    # And remove content wrapped by backticks
+def check_backticks(content):
+    # Check if `` appears in twin
     backticks = []
-    content_findall = re.findall(r'```', content)
-    unclosed_blocks = 0
+    open_inline_code = False
+    content_findall = re.findall(r'`', content)
     if len(content_findall):
-        content_finditer = re.finditer(r'```', content)
+        content_finditer = re.finditer(r'`', content)
         for i in content_finditer:
-            pos = i.span()
+            pos = list(i.span())
+            # which_line is the line number of the matched str
+            which_line = content.count('\n', 0, i.start())
+            pos.append(which_line)
             backticks.append(pos)
-        # e.g. backticks = [[23, 26],[37, 40],[123, 126],[147, 150]]
-        if len(backticks) % 2 != 0:
-            # print(len(content_findall))
-            # print(backticks)
-            # print(backticks[0][0], backticks[0][1])
-            # print(content[backticks[0][0]-10:backticks[0][1]+10])
-            unclosed_blocks = 1
-        elif len(backticks) != 0:
-            backticks_start = backticks[0][0]
-            backticks_end = backticks[1][1]
-            content = content.replace(content[backticks_start:backticks_end],'')
-            unclosed_blocks, content = check_block(content)
+            
 
-    return unclosed_blocks, content
+        # e.g. backticks = [[23, 24, 3],[37, 38, 4],[123, 124, 7],[147, 148, 9]]
+        if len(backticks) % 2 != 0:
+            open_inline_code = True
+            return open_inline_code, backticks
+    return open_inline_code, backticks
+
+def filter_block(content):
+    # Remove content wrapped by ` `
+    if check_backticks(content):
+        open_inline_code, backticks = check_backticks(content)
+        if len(backticks) != 0:
+            block_start = backticks[0][0]
+            block_end = backticks[1][1]
+            content = content.replace(content[block_start:block_end],'')
+            content = filter_block(content)
+    return content
 
 def check_tags(content):
     content = filter_frontmatter(content)
-    unclosed_blocks, content = check_block(content)
+    open_inline_code, backticks = check_backticks(content)
+    if open_inline_code:
+        stack = False
+    else:
+        # filter all inline code and code blocks
+        content = filter_block(content)
+        # print(content)
+        stack = []
+        result_findall = re.findall(r'<([^\n`>]*)>', content)
+        if len(result_findall) != 0:
+            result_finditer = re.finditer(r'<([^\n`>]*)>', content)
+            for i in result_finditer:
+                # print(i.group(), i.span())
+                tag = i.group()
+                pos = i.span()
+                # which_line is the line number of the matched str
+                # which_line = content.count('\n', 0, i.start())
 
-    # print(content)
-    stack = []
-    result_findall = re.findall(r'<([^\n`>]*)>', content)
-    if len(result_findall) != 0:
-        result_finditer = re.finditer(r'<([^\n`>]*)>', content)
-        for i in result_finditer:
-            # print(i.group(), i.span())
-            tag = i.group()
-            pos = i.span()
-
-            if tag[:4] == '<!--' and tag[-3:] == '-->':
-                continue
-            elif content[pos[0]-2:pos[0]] == '{{' and content[pos[1]:pos[1]+2] == '}}':
-                # filter copyable shortcodes
-                continue
-            elif tag[:5] == '<http': # or tag[:4] == '<ftp'
-                # filter urls
-                continue
-            elif tag_is_wrapped(pos, content):
-                # print(content[int(pos[0])-1:int(pos[1]+1)])
-                # print(tag, 'is wrapped by backticks!')
-                continue
-
-            stack = stack_tag(tag, stack)
-
+                if tag[:4] == '<!--' and tag[-3:] == '-->':
+                    continue
+                elif content[pos[0]-2:pos[0]] == '{{' and content[pos[1]:pos[1]+2] == '}}':
+                    # filter copyable shortcodes
+                    continue
+                elif tag[:5] == '<http': # or tag[:4] == '<ftp'
+                    # filter urls
+                    continue
+                stack = stack_tag(tag, stack)
     return stack
 
 def parse_args_file(path):
@@ -155,9 +141,12 @@ def process(opt):
         if os.path.isfile(tag):
             content = parse_args_file(tag)
             stack = check_tags(content)
-            if len(stack):
+            if not stack:
+                print("ERROR: " + tag + ' has open inline code or code blocks, which affects the check for open tags. Please add the missing backtick(s) and run `cocheck` again.\n')
+                exit(1)
+            elif len(stack):
                 stack = ['<' + i + '>' for i in stack]
-                print("ERROR: " + path + ' has unclosed tags: ' + ', '.join(stack) + '.\n')
+                print("ERROR: " + tag + ' has unclosed tags: ' + ', '.join(stack) + '.\n')
                 # print("HINT: Unclosed tags will cause website build failure. Please fix the reported unclosed tags. You can use backticks `` to wrap them or close them. Thanks.")
                 exit(1)
 
@@ -168,49 +157,43 @@ def process(opt):
                 with open(old_file_path, 'r', encoding='utf-8') as f:
                     content = f.read()
                 stack = check_tags(content)
-                if len(stack):
+                if not stack:
+                    print("ERROR: " + tag + ' has open inline code or code blocks, which affects the check for open tags. Please add the missing backtick(s) and run `cocheck` again.\n')
+                elif len(stack):
                     stack = ['<' + i + '>' for i in stack]
                     print("ERROR: " + old_file_path + ' has unclosed tags: ' + ', '.join(stack) + '.\n')
                     status_code = 1
-
             if status_code:
                 # print("HINT: Unclosed tags will cause website build failure. Please fix the reported unclosed tags. You can use backticks `` to wrap them or close them. Thanks.")
                 exit(1)
-
         else:
             print('Please give me a file path or a directory path.')
+            exit(1)
 
     elif block:
         if os.path.isfile(block):
             content = parse_args_file(block)
-            unclosed_blocks, content = check_block(content)
-            if unclosed_blocks:
-                print("ERROR: " + block + ' has unclosed code blocks. Please close them.')
+            open_inline_code, backticks = check_backticks(content)
+            if open_inline_code:
+                print("ERROR: " + block + ' has unclosed inline code or code blocks in Line' + backticks[-1][-1] + '. Please close them.')
                 exit(1)
-
         elif os.path.isdir(block):
             status_code = 0
             file_with_paths = parse_args_dir(block)
             for old_file_path in file_with_paths:
                 with open(old_file_path, 'r', encoding='utf-8') as f:
                     content = f.read()
-                unclosed_blocks, content = check_block(content)
-                if unclosed_blocks:
-                    print("ERROR: " + old_file_path + ' has unclosed code blocks. Please close them.')
-                    status_code = 1
-
-            if status_code:
-                exit(1)
-
+                open_inline_code, backticks = check_backticks(content)
+                if open_inline_code:
+                    print("ERROR: " + old_file_path + ' has unclosed inline code or code blocks in Line ' + str(backticks[-1][-1]) + '. Please close them.')
+                    exit(1)
         else:
             print('Please specify a file path or a directory path as the argument.')
-
     else:
         print('Please specify an option. Execute `cocheck -h` to list all options.')
-        # print(parser.print_help())
 
 def exe_main():
-    parser = OptionParser(version="%prog 0.0.16")
+    parser = OptionParser(version="%prog 0.0.17")
     parser.set_defaults(verbose=True)
     # parser.add_option("-a", "--all", dest="all",
     #                   help="Checks unclosed tags, code blocks, copyable snippets, etc.", metavar="ALL")
@@ -218,8 +201,5 @@ def exe_main():
                       help="Checks unclosed HTML tags and code blocks; Accepts a file path or a directory path as the argument.", metavar="TAG")
     parser.add_option("-b", "--block", dest="block", type="string", 
                       help="Only checks unclosed code blocks; Accepts a file path or a directory path as the argument.", metavar="BLOCK")
-    # parser.add_option("-s", "--snippet", dest="snippet", type="string", 
-    #                   help="Checks unclosed copyable snippets", metavar="SNIPPET")
-
     options, args = parser.parse_args()
     process(options)
