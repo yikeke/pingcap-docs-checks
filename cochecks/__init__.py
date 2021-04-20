@@ -72,7 +72,6 @@ def check_backticks(content):
             which_line = content.count('\n', 0, i.start())
             pos.append(which_line)
             backticks.append(pos)
-            
 
         # e.g. backticks = [[23, 24, 3],[37, 38, 4],[123, 124, 7],[147, 148, 9]]
         if len(backticks) % 2 != 0:
@@ -197,9 +196,9 @@ def exe_main():
     parser.set_defaults(verbose=True)
     # parser.add_option("-a", "--all", dest="all",
     #                   help="Checks unclosed tags, code blocks, copyable snippets, etc.", metavar="ALL")
-    parser.add_option("-t", "--tag", dest="tag", type="string", 
+    parser.add_option("-t", "--tag", dest="tag", type="string",
                       help="Checks unclosed HTML tags and code blocks; Accepts a file path or a directory path as the argument.", metavar="TAG")
-    parser.add_option("-b", "--block", dest="block", type="string", 
+    parser.add_option("-b", "--block", dest="block", type="string",
                       help="Only checks unclosed code blocks; Accepts a file path or a directory path as the argument.", metavar="BLOCK")
     options, args = parser.parse_args()
     process(options)
